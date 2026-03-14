@@ -1,0 +1,91 @@
+import { useState, useEffect, useCallback } from "react";
+import Header from "./components/Header";
+import Overview from "./components/Overview";
+import LiveFeed from "./components/LiveFeed";
+import Analytics from "./components/Analytics";
+import Logs from "./components/Logs";
+import { generateHistory, DEVICES } from "./data/wasteData";
+import "./styles.css";
+
+const TABS = ["overview", "live", "analytics", "logs"];
+
+export default function App() {
+  const [tab, setTab] = useState("overview");
+  const [history, setHistory] = useState(generateHistory(24));
+  const [devices, setDevices] = useState(
+    DEVICES.map(d => ({
+      ...d,
+      active: true,
+      detected: Math.random() > 0.4,
+      storage: Math.floor(Math.random() * 65) + 10,
+      solar: Math.floor(Math.random() * 80) + 10,
+      collected: parseFloat((Math.random() * 8 + 1).toFixed(2)),
+      conveyor: Math.random() > 0.3,
+    }))
+  );
+  const [alerts, setAlerts] = useState([]);
+  const [time, setTime] = useState(new Date());
+
+  const addAlert = useCallback((msg, type = "info") => {
+    setAlerts(prev => [
+      { id: Date.now() + Math.random(), msg, type, time: new Date().toLocaleTimeString() },
+      ...prev.slice(0, 29),
+    ]);
+  }, []);
+
+  // Clock tick + simulate sensor updates
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setTime(new Date());
+      setDevices(prev => prev.map(d => {
+        if (!d.active) return d;
+        const wasDetected = d.detected;
+        const detected = Math.random() > 0.35;
+        const storage = Math.min(99, d.storage + (detected ? Math.random() * 0.4 : 0));
+        const solar = Math.max(5, Math.min(100, d.solar + (Math.random() - 0.48) * 3));
+        const collected = d.collected + (detected ? parseFloat((Math.random() * 0.01).toFixed(3)) : 0);
+        if (detected !== wasDetected) {
+          addAlert(
+            `${d.name}: Waste ${detected ? "detected" : "cleared"} on surface`,
+            detected ? "warning" : "success"
+          );
+        }
+        if (storage >= 90 && d.storage < 90) {
+          addAlert(`${d.name}: Storage container FULL — return to dock`, "danger");
+        }
+        return { ...d, detected, storage: parseFloat(storage.toFixed(1)), solar: parseFloat(solar.toFixed(1)), collected: parseFloat(collected.toFixed(3)) };
+      }));
+    }, 3000);
+    return () => clearInterval(tick);
+  }, [addAlert]);
+
+  const toggleDevice = (id) => {
+    setDevices(prev => prev.map(d => {
+      if (d.id !== id) return d;
+      addAlert(`${d.name}: ${d.active ? "Deactivated" : "Activated"} remotely`, "info");
+      return { ...d, active: !d.active, conveyor: !d.active ? d.conveyor : false };
+    }));
+  };
+
+  const toggleConveyor = (id) => {
+    setDevices(prev => prev.map(d => {
+      if (d.id !== id) return d;
+      addAlert(`${d.name}: Conveyor ${d.conveyor ? "stopped" : "started"}`, "info");
+      return { ...d, conveyor: !d.conveyor };
+    }));
+  };
+
+  const totalCollected = devices.reduce((a, d) => a + d.collected, 0);
+
+  return (
+    <div className="app">
+      <Header tab={tab} setTab={setTab} time={time} alertCount={alerts.length} tabs={TABS} />
+      <main className="main">
+        {tab === "overview"   && <Overview  devices={devices} history={history} totalCollected={totalCollected} toggleDevice={toggleDevice} toggleConveyor={toggleConveyor} />}
+        {tab === "live"       && <LiveFeed  devices={devices} toggleDevice={toggleDevice} toggleConveyor={toggleConveyor} />}
+        {tab === "analytics"  && <Analytics history={history} devices={devices} totalCollected={totalCollected} />}
+        {tab === "logs"       && <Logs      alerts={alerts} onClear={() => setAlerts([])} />}
+      </main>
+    </div>
+  );
+}
