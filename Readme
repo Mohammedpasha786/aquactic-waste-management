@@ -1,0 +1,124 @@
+#  AquaCollect — Aquatic Waste Management Device
+
+An automated solar-powered floating device that detects and collects plastic waste from water surfaces using ultrasonic sensing and a conveyor belt system.
+
+##  Problem & Solution
+
+**Problem**: Plastic waste accumulates in rivers and lakes, harming aquatic ecosystems and entering the food chain.
+
+**Solution**: Deploy autonomous floating units that scan the water surface with ultrasonic sensors, activate a conveyor belt upon detection, and collect debris into an onboard storage container — all powered by solar energy.
+
+##  Features
+
+| Feature | Description |
+
+|  Floating Waste Detection | HC-SR04 ultrasonic + IR dual-sensor detection |
+|  Conveyor Collection | DC motor-driven belt pulls debris into container |
+|  Storage Monitoring | Real-time fill-level tracking with dock alert |
+|  Solar Operation | Solar panel + Li-Ion battery for autonomous runtime |
+|  WiFi REST API | ESP8266 streams live data over local WiFi |
+|  React Dashboard | Multi-tab IoT monitoring UI with live simulation |
+
+
+##  Project Structure
+
+aquatic-waste/
+├── src/
+│   ├── App.jsx                   # Root component + live simulation
+│   ├── main.jsx                  # Entry point
+│   ├── styles.css                # Deep ocean industrial theme
+│   ├── components/
+│   │   ├── Header.jsx            # Navigation header
+│   │   ├── DeviceCard.jsx        # Per-unit control card
+│   │   ├── Overview.jsx          # Dashboard overview tab
+│   │   ├── LiveFeed.jsx          # Live water surface view
+│   │   ├── Analytics.jsx         # Charts + sample data table
+│   │   └── Logs.jsx              # Event log
+│   ├── data/wasteData.js         # Sample data + device definitions
+│   └── utils/deviceLogic.js     # Threshold logic (mirrors firmware)
+├── arduino/
+│   └── aquacollect_firmware.ino  # ESP8266 firmware
+├── docs/
+│   └── wiring_diagram.md         # Hardware wiring guide
+├── index.html
+├── package.json
+└── vite.config.js
+
+## Getting Started
+
+### Web Dashboard
+npm install
+npm run dev
+# → Open http://localhost:3000
+### Production Build
+npm run build
+# Output in /dist — deploy to any static host
+
+## Hardware Components
+
+| Component | Qty | Purpose |
+|---|---|---|
+| NodeMCU ESP8266 | 1 | Microcontroller + WiFi |
+| HC-SR04 Ultrasonic | 1 | Detect floating debris distance |
+| IR Obstacle Sensor | 1 | Secondary waste proximity detection |
+| L298N Motor Driver | 1 | Control conveyor belt motor |
+| DC Gear Motor 5V | 1 | Drive conveyor belt |
+| 6V 2W Solar Panel | 1 | Primary power source |
+| 18650 Li-Ion + TP4056 | 1 | Battery backup |
+| MT3608 Boost Converter | 1 | 5V regulated output |
+| IP65 Enclosure | 1 | Waterproof housing |
+| PVC Float Tubes | 2 | Buoyancy platform |
+
+See [`docs/wiring_diagram.md`](docs/wiring_diagram.md) for full pinout.
+##  Firmware Setup
+
+1. Install ESP8266 board in Arduino IDE
+2. Install `ArduinoJson` library
+3. Edit `aquacollect_firmware.ino`:
+   ```cpp
+   const char* WIFI_SSID     = "YOUR_SSID";
+   const char* WIFI_PASSWORD = "YOUR_PASSWORD";
+   const char* DEVICE_ID     = "AWC-01";
+   ```
+4. Upload at 115200 baud to NodeMCU 1.0
+
+##  REST API Reference
+
+| Endpoint | Description |
+|---|---|
+| `GET /status` | Full JSON sensor snapshot |
+| `GET /conveyor?state=on` | Start conveyor belt |
+| `GET /conveyor?state=off` | Stop conveyor belt |
+| `GET /auto?enabled=true` | Enable auto mode |
+| `GET /auto?enabled=false` | Manual control mode |
+| `GET /reset` | Reset storage counter after emptying |
+
+### Example `/status` Response
+
+```json
+{
+  "id": "AWC-01",
+  "name": "River Delta Unit",
+  "detected": true,
+  "conveyor": true,
+  "autoMode": true,
+  "storage": 34.5,
+  "solar": 78.2,
+  "collected": 1.42,
+  "uptime": 7200
+}
+
+##  Sample Dataset
+
+| Time  | Waste Detected | Collected (kg) |
+|-------|---------------|----------------|
+| 10:00 | Yes           | 1.2            |
+| 11:00 | Yes           | 0.8            |
+| 12:00 | No            | 0.0            |
+
+
+##  Auto Mode Logic
+
+waste detected AND solar >= 15% AND storage < 90%  →  Conveyor ON
+no waste detected                                   →  Conveyor OFF
+storage >= 90%                                      →  HALT + dock alert
