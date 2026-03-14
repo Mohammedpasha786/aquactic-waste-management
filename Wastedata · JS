@@ -1,0 +1,36 @@
+// Sample data from project spec
+export const SAMPLE_LOGS = [
+  { time: "10:00", detected: true,  collected: 1.2 },
+  { time: "11:00", detected: true,  collected: 0.8 },
+  { time: "12:00", detected: false, collected: 0.0 },
+];
+
+// Device unit definitions
+export const DEVICES = [
+  { id: "AWC-01", name: "River Delta Unit",  location: "Krishna River — Sector A", lat: 16.31, lng: 80.45 },
+  { id: "AWC-02", name: "Lake Surface Unit", location: "Kolleru Lake — North Zone",  lat: 16.60, lng: 81.12 },
+  { id: "AWC-03", name: "Canal Gate Unit",   location: "Buckingham Canal — Km 14",  lat: 16.17, lng: 80.90 },
+];
+
+export function generateHistory(hours = 24) {
+  const now = Date.now();
+  return Array.from({ length: hours }, (_, i) => {
+    const d = new Date(now - (hours - 1 - i) * 3_600_000);
+    const detected = Math.random() > 0.25;
+    return {
+      time: d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      hour: i,
+      detected,
+      collected: detected ? parseFloat((Math.random() * 2.5).toFixed(2)) : 0,
+      solar: parseFloat((Math.random() * 100).toFixed(1)),
+      storageUsed: Math.floor(Math.random() * 80) + 10,
+    };
+  });
+}
+
+export const WASTE_TYPES = [
+  { label: "Plastic Bottles", pct: 42, color: "#0ea5e9" },
+  { label: "Packaging Film",  pct: 28, color: "#06b6d4" },
+  { label: "Foam / EPS",      pct: 18, color: "#22d3ee" },
+  { label: "Other Debris",    pct: 12, color: "#67e8f9" },
+];
